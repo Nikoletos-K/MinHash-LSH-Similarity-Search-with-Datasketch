@@ -12,9 +12,6 @@
 # ## Question 2.1: Nearest Neighbor Search without and with Locality Sensitive Hashing
 # 
 
-# In[1]:
-
-
 import pandas as pd
 from tqdm import tqdm
 
@@ -31,12 +28,6 @@ import matplotlib.pyplot as plt
 nltk.download('stopwords')
 nltk.download('punkt')
 
-
-# ## Reading the dataset
-
-# In[2]:
-
-
 train_data = pd.read_csv('./Part-1/data/train.csv', sep=',')
 test_data = pd.read_csv('./Part-1/data/test_without_labels.csv', sep=',')
 
@@ -47,11 +38,6 @@ train_data['text'] = train_data['Title'] + " " + train_data['Content']
 print("\nTest data shape: ", test_data.shape)
 print(test_data.head())
 test_data['text'] = test_data['Title'] + " " + test_data['Content']
-
-
-# ## Pre-processing text
-
-# In[3]:
 
 
 from stop_words import get_stop_words
@@ -138,10 +124,6 @@ from sklearn.neighbors import NearestNeighbors
 from datasketch import MinHashLSH, MinHash
 import numpy as np
 
-
-# In[8]:
-
-
 # def jaccard_similarity(a, b):
 #     intersection_size = len(set(a) & set(b))
 #     union_size = len(set(a) | set(b))
@@ -178,22 +160,15 @@ def jacc_sim(a, b):
     return 1-jaccard(a,b)
 
 
-# In[9]:
-
-
 test_data_aslist = test_data['text'].tolist()
 train_data_aslist = train_data['text'].tolist()
-
-
-# In[10]:
-
 
 # Define parameters
 k_neighbors = 15  # Number of neighbors for K-NN
 threshold = 0.8  # Similarity threshold for LSH
 
 # Create TF-IDF vectorizer
-vectorizer = CountVectorizer(max_features=2056)
+vectorizer = CountVectorizer()
 # vectorizer = TfidfVectorizer(max_features=100)
 
 X_train_tfidf = vectorizer.fit_transform(train_data['text'])
@@ -206,30 +181,10 @@ num_permutations = [16, 32, 64]
 X_train_dense = X_train_tfidf.toarray()
 X_test_dense = X_test_tfidf.toarray()
 
-
-# In[11]:
-
-
 print("Calculating KNN...")
 true_knn = NearestNeighbors(n_neighbors=k_neighbors, algorithm='brute', metric=jacc_sim).fit(X_train_dense)
 true_knn_distances, true_knn_indices = true_knn.kneighbors(X_test_dense)
 print("Finished calculating KNN.")
-
-
-# In[12]:
-
-
-true_knn_distances
-
-
-# In[13]:
-
-
-true_knn_indices
-
-
-# In[14]:
-
 
 def lsh_knn(candidates, train_set, test_doc):
     similarities = [(idx, jaccard_similarity(set(test_doc.split()), set(train_set[idx].split())))
@@ -239,10 +194,6 @@ def lsh_knn(candidates, train_set, test_doc):
     k_most_similar = sorted_similarities[:k_neighbors]
 
     return k_most_similar, similarities
-
-
-# In[ ]:
-
 
 for num_perm in num_permutations:
     lsh = MinHashLSH(threshold=threshold, num_perm=num_perm)
@@ -279,7 +230,6 @@ for num_perm in num_permutations:
 #             bucket_indices, bucket_distances = lsh_knn(candidates, train_data_aslist, doc)
 #             lsh_indices.append(bucket_indices)
 #             lsh_distances.append(bucket_distances)
-
         
     end_query_time = time.time()
     build_time = time.time()
