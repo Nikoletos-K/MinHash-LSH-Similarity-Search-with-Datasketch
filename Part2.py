@@ -51,7 +51,7 @@ test_data['text'] = test_data['Title'] + " " + test_data['Content']
 
 # ## Pre-processing text
 
-# In[ ]:
+# In[3]:
 
 
 from stop_words import get_stop_words
@@ -68,7 +68,7 @@ stop_words= stop_words_nltk.union(stop_words_pypi)
 stop_words = stop_words.union(manual_stop_words)
 
 
-# In[ ]:
+# In[4]:
 
 
 # stop_words = set(stopwords.words('english'))
@@ -90,7 +90,7 @@ def preprocess_text(text):
     return processed_text
 
 
-# In[3]:
+# In[5]:
 
 
 # from tqdm.notebook import tqdm
@@ -119,7 +119,7 @@ else:
     test_data = pd.read_csv(preprocessed_file_path_test)
 
 
-# In[ ]:
+# In[6]:
 
 
 train_data = train_data.head(1000)
@@ -128,7 +128,7 @@ test_data = test_data.head(1000)
 
 # ## Data vectorization
 
-# In[ ]:
+# In[7]:
 
 
 import time
@@ -139,7 +139,7 @@ from datasketch import MinHashLSH, MinHash
 import numpy as np
 
 
-# In[ ]:
+# In[8]:
 
 
 # def jaccard_similarity(a, b):
@@ -174,15 +174,18 @@ def jaccard_similarity(set1, set2):
 
 from scipy.spatial.distance import jaccard
 
+def jacc_sim(a, b):
+    return 1-jaccard(a,b)
 
-# In[ ]:
+
+# In[9]:
 
 
 test_data_aslist = test_data['text'].tolist()
 train_data_aslist = train_data['text'].tolist()
 
 
-# In[ ]:
+# In[10]:
 
 
 # Define parameters
@@ -204,26 +207,28 @@ X_train_dense = X_train_tfidf.toarray()
 X_test_dense = X_test_tfidf.toarray()
 
 
-# In[ ]:
+# In[11]:
 
 
-true_knn = NearestNeighbors(n_neighbors=k_neighbors, algorithm='brute', metric='jaccard').fit(X_train_dense)
+print("Calculating KNN...")
+true_knn = NearestNeighbors(n_neighbors=k_neighbors, algorithm='brute', metric=jacc_sim).fit(X_train_dense)
 true_knn_distances, true_knn_indices = true_knn.kneighbors(X_test_dense)
+print("Finished calculating KNN.")
 
 
-# In[ ]:
+# In[12]:
 
 
 true_knn_distances
 
 
-# In[ ]:
+# In[13]:
 
 
 true_knn_indices
 
 
-# In[ ]:
+# In[14]:
 
 
 def lsh_knn(candidates, train_set, test_doc):
