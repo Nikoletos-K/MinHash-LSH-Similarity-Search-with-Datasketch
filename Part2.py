@@ -104,8 +104,8 @@ else:
     print("[TEST] Reading from file")
     test_data = pd.read_csv(preprocessed_file_path_test)
 
-train_data = train_data.head(10000)
-test_data = test_data.head(5000)
+# train_data = train_data.head(10000)
+# test_data = test_data.head(5000)
 
 import time
 import pandas as pd
@@ -173,10 +173,20 @@ X_test_dense = X_test_tfidf.toarray()
 
 print("Calculating KNN...")
 start_knn_time = time.time()
-true_knn = NearestNeighbors(n_neighbors=k_neighbors, algorithm='brute', metric=jacc_sim).fit(X_train_dense)
-true_knn_distances, true_knn_indices = true_knn.kneighbors(X_test_dense)
-print("Finished calculating KNN.")
-print(f"KNN Time: {time.time() - start_knn_time:.4f} seconds")
+
+# Check if the true KNN distances and indices have already been calculated
+if os.path.exists('true_knn_distances.npy') and os.path.exists('true_knn_indices.npy'):
+    print("Loading true KNN distances and indices from file...")
+    true_knn_distances = np.load('true_knn_distances.npy')
+    true_knn_indices = np.load('true_knn_indices.npy')
+else:
+    true_knn = NearestNeighbors(n_neighbors=k_neighbors, algorithm='brute', metric=jacc_sim).fit(X_train_dense)
+    true_knn_distances, true_knn_indices = true_knn.kneighbors(X_test_dense)
+    print("Finished calculating KNN.")
+    print(f"KNN Time: {time.time() - start_knn_time:.4f} seconds")
+
+    np.save('true_knn_distances.npy', true_knn_distances)
+    np.save('true_knn_indices.npy', true_knn_indices)
 
 def lsh_knn(candidates, train_set, test_doc):
     similarities = [(idx, jaccard_similarity(set(test_doc.split()), set(train_set[idx].split())))
