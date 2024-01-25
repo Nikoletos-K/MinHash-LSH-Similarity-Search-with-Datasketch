@@ -104,8 +104,8 @@ else:
     print("[TEST] Reading from file")
     test_data = pd.read_csv(preprocessed_file_path_test)
 
-# train_data = train_data.head(10000)
-# test_data = test_data.head(5000)
+train_data = train_data.head(1000)
+test_data = test_data.head(1000)
 
 import time
 import pandas as pd
@@ -120,29 +120,29 @@ import numpy as np
 
 #     return intersection_size / union_size if union_size > 0 else 0.0
 
-def jaccard_similarity(a, b):
+# def jaccard_similarity(a, b):
     
-    a = a.toarray()
-    b = b.toarray()
+#     a = a.toarray()
+#     b = b.toarray()
     
-    set_a = set(a)
-    set_b = set(b)
+#     set_a = set(a)
+#     set_b = set(b)
     
-    intersection_size = len(np.intersect1d(a, b))
-    union_size = len(set_a) + len(set_b) - intersection_size
+#     intersection_size = len(np.intersect1d(a, b))
+#     union_size = len(set_a) + len(set_b) - intersection_size
     
-    return intersection_size / union_size if union_size > 0 else 0.0
+#     return intersection_size / union_size if union_size > 0 else 0.0
 
-def jaccard_similarity(set1, set2):
-    set1 = set1.toarray()
-    set2 = set2.toarray()
-    intersection_size = len(np.intersect1d(set1, set2))
-    union_size = len(np.union1d(set1, set2))
+# def jaccard_similarity(set1, set2):
+#     set1 = set1.toarray()
+#     set2 = set2.toarray()
+#     intersection_size = len(np.intersect1d(set1, set2))
+#     union_size = len(np.union1d(set1, set2))
     
-    if union_size == 0:
-        return 0.0  # Jaccard similarity is 0 if the sets are both empty
-    else:
-        return intersection_size / union_size
+#     if union_size == 0:
+#         return 0.0  # Jaccard similarity is 0 if the sets are both empty
+#     else:
+#         return intersection_size / union_size
 
 from scipy.spatial.distance import jaccard
 
@@ -158,8 +158,8 @@ k_neighbors = 15  # Number of neighbors for K-NN
 threshold = 0.8  # Similarity threshold for LSH
 
 # Create TF-IDF vectorizer
-# vectorizer = CountVectorizer()
-vectorizer = TfidfVectorizer()
+vectorizer = CountVectorizer(max_features=1024)
+# vectorizer = TfidfVectorizer()
 
 X_train_tfidf = vectorizer.fit_transform(train_data['text'])
 X_test_tfidf = vectorizer.transform(test_data['text'])
@@ -203,12 +203,15 @@ for num_perm in num_permutations:
     minhash_signatures_train = []
     for doc in train_data_aslist:
         minhash = MinHash(num_perm=num_perm)
-        for word in doc:
+        # print("doc: ", doc)
+        for word in set(doc.split()):
+            # print("word: ", word)
             minhash.update(word.encode('utf8'))
 #         print(minhash.hashvalues)
         minhash_signatures_train.append(minhash)
 #         print(minhash_signatures_train)
-        lsh.insert(len(minhash_signatures_train) - 1, minhash)
+    for i, minhash in enumerate(minhash_signatures_train):
+        lsh.insert(str(i), minhash)
 
     start_query_time = time.time()
 
@@ -216,15 +219,16 @@ for num_perm in num_permutations:
     total_fraction = 0
     lsh_indices = []
     lsh_distances = []
+    avg_bucket_size = []
     for i, doc in enumerate(test_data_aslist):
         minhash = MinHash(num_perm=num_perm)
-        for word in doc:
+        for word in set(doc.split()):
             minhash.update(word.encode('utf8'))
 
         candidates = lsh.query(minhash)
         similarities = true_knn_distances[i]
         true_indices = true_knn_indices[i]
-        
+        avg_bucket_size.append(len(candidates))
         num_of_true_docs = sum(1 for item in candidates if item in true_indices)
         total_fraction += (num_of_true_docs / true_indices.shape[0])
 
@@ -232,7 +236,15 @@ for num_perm in num_permutations:
 #             bucket_indices, bucket_distances = lsh_knn(candidates, train_data_aslist, doc)
 #             lsh_indices.append(bucket_indices)
 #             lsh_distances.append(bucket_distances)
-        
+    
+    print(f"Average Bucket Size: {sum(avg_bucket_size) / len(avg_bucket_size)}")
+    # plot histogram of bucket sizes
+    plt.hist(avg_bucket_size, bins=20)
+    plt.xlabel("Bucket Size")
+    plt.ylabel("Frequency")
+    plt.title("Histogram of Bucket Sizes")
+    plt.show()
+    
     end_query_time = time.time()
     build_time = time.time()
     query_time = end_query_time - start_query_time
