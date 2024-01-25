@@ -104,8 +104,8 @@ else:
     print("[TEST] Reading from file")
     test_data = pd.read_csv(preprocessed_file_path_test)
 
-train_data = train_data.head(1000)
-test_data = test_data.head(1000)
+train_data = train_data.head(100)
+test_data = test_data.head(100)
 
 import time
 import pandas as pd
@@ -155,7 +155,7 @@ train_data_aslist = train_data['text'].tolist()
 
 # Define parameters
 k_neighbors = 15  # Number of neighbors for K-NN
-threshold = 0.8  # Similarity threshold for LSH
+threshold = 0.3  # Similarity threshold for LSH
 
 # Create TF-IDF vectorizer
 vectorizer = CountVectorizer(max_features=1024)
@@ -199,19 +199,20 @@ def lsh_knn(candidates, train_set, test_doc):
 
 for num_perm in num_permutations:
     lsh = MinHashLSH(threshold=threshold, num_perm=num_perm)
-    
+
     minhash_signatures_train = []
-    for doc in train_data_aslist:
-        minhash = MinHash(num_perm=num_perm)
+    for i, doc in enumerate(train_data_aslist):
         # print("doc: ", doc)
+        minhash = MinHash(num_perm=num_perm)
         for word in set(doc.split()):
             # print("word: ", word)
             minhash.update(word.encode('utf8'))
-#         print(minhash.hashvalues)
         minhash_signatures_train.append(minhash)
-#         print(minhash_signatures_train)
+    
+    # print("minhash_signatures_train: ", len(minhash_signatures_train))
     for i, minhash in enumerate(minhash_signatures_train):
-        lsh.insert(str(i), minhash)
+        # print("i: ", i, "minhash: ", minhash)
+        lsh.insert(i, minhash)
 
     start_query_time = time.time()
 
@@ -222,28 +223,32 @@ for num_perm in num_permutations:
     avg_bucket_size = []
     for i, doc in enumerate(test_data_aslist):
         minhash = MinHash(num_perm=num_perm)
+        # print("testdoc: ", doc)
         for word in set(doc.split()):
+            # print("word: ", word)
             minhash.update(word.encode('utf8'))
 
         candidates = lsh.query(minhash)
+        # print(candidates)
         similarities = true_knn_distances[i]
         true_indices = true_knn_indices[i]
+        
         avg_bucket_size.append(len(candidates))
         num_of_true_docs = sum(1 for item in candidates if item in true_indices)
         total_fraction += (num_of_true_docs / true_indices.shape[0])
-
+        # exit(1)
 #         if candidates:
 #             bucket_indices, bucket_distances = lsh_knn(candidates, train_data_aslist, doc)
 #             lsh_indices.append(bucket_indices)
 #             lsh_distances.append(bucket_distances)
     
-    print(f"Average Bucket Size: {sum(avg_bucket_size) / len(avg_bucket_size)}")
-    # plot histogram of bucket sizes
-    plt.hist(avg_bucket_size, bins=20)
-    plt.xlabel("Bucket Size")
-    plt.ylabel("Frequency")
-    plt.title("Histogram of Bucket Sizes")
-    plt.show()
+    # print(f"Average Bucket Size: {sum(avg_bucket_size) / len(avg_bucket_size)}")
+    # # plot histogram of bucket sizes
+    # plt.hist(avg_bucket_size, bins=20)
+    # plt.xlabel("Bucket Size")
+    # plt.ylabel("Frequency")
+    # plt.title("Histogram of Bucket Sizes")
+    # plt.show()
     
     end_query_time = time.time()
     build_time = time.time()
@@ -255,5 +260,6 @@ for num_perm in num_permutations:
     print(f"Total Query Time (QueryTime): {query_time:.4f} seconds")
     print(f"Total Time (TotalTime): {total_time:.4f} seconds")
     accuracy = total_fraction / len(test_data_aslist)
+    print(f"Average Bucket Size: {sum(avg_bucket_size) / len(avg_bucket_size)}")
     print(f"Fraction of True K-most similar documents: {accuracy:.4f}")
 
