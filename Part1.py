@@ -179,29 +179,18 @@ else:
 
 # ### Entertainment WordCloud
 
-# In[13]:
-
-
 text = " ".join(review for review in train_data[train_data['Label']=='Entertainment']['text'])
 generate_wordcloud(text, title="Entertainment")
 print("Entertainment Word cloud generated.")
 
 
 # ### Technology WordCloud
-
-# In[14]:
-
-
 text = " ".join(review for review in train_data[train_data['Label']=='Technology']['text'])
 generate_wordcloud(text, title="Technology")
 print("Technology Word cloud generated.")
 
 
 # ### Health WordCloud
-
-# In[15]:
-
-
 text = " ".join(review for review in train_data[train_data['Label']=='Health']['text'])
 generate_wordcloud(text, title="Health")
 print("Health Word cloud generated.")

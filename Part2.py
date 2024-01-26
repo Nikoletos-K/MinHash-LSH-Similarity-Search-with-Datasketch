@@ -113,7 +113,7 @@ train_data_aslist = train_data['text'].tolist()
 
 # Define parameters
 k_neighbors = 15  # Number of neighbors for K-NN
-threshold = 0.3  # Similarity threshold for LSH
+threshold = 0.8  # Similarity threshold for LSH
 
 # Create TF-IDF vectorizer
 vectorizer = CountVectorizer(max_features=1024)
@@ -158,19 +158,20 @@ def lsh_knn(candidates, train_set, test_doc):
 
 print("Calculating LSH...")
 for num_perm in num_permutations:
-    print(f"Calculating LSH for num_perm={num_perm}...")
+    print(f"Calculating LSH for num_perm={num_perm} and threshold={threshold}...")
     lsh = MinHashLSH(threshold=threshold, num_perm=num_perm)
 
     minhash_signatures_train = []
-    for i, doc in enumerate(train_data_aslist):
+    print("Building LSH...")
+    for i, doc in tqdm(enumerate(train_data_aslist)):
         minhash = MinHash(num_perm=num_perm)
         for word in set(doc.split()):
             minhash.update(word.encode('utf8'))
         minhash_signatures_train.append(minhash)
-    
-    print("Finished calculating LSH.")
+
     for i, minhash in enumerate(minhash_signatures_train):
         lsh.insert(i, minhash)
+    print("Finished building LSH.")
 
     start_query_time = time.time()
 
@@ -179,7 +180,7 @@ for num_perm in num_permutations:
     lsh_indices = []
     lsh_distances = []
     avg_bucket_size = []
-    print("Calculating LSH KNN...")
+    print("Quering for each doc file...")
     for i, doc in tqdm(enumerate(test_data_aslist)):
         minhash = MinHash(num_perm=num_perm)
         for word in set(doc.split()):
@@ -188,7 +189,7 @@ for num_perm in num_permutations:
         candidates = lsh.query(minhash)
         similarities = true_knn_distances[i]
         true_indices = true_knn_indices[i]
-        
+
         avg_bucket_size.append(len(candidates))
         num_of_true_docs = sum(1 for item in candidates if item in true_indices)
         total_fraction += (num_of_true_docs / true_indices.shape[0])
@@ -204,8 +205,9 @@ for num_perm in num_permutations:
     plt.xlabel("Bucket Size")
     plt.ylabel("Frequency")
     plt.title("Histogram of Bucket Sizes")
-    plt.show()
-    
+    plt.savefig('buckets_'+str(num_perm)+'.png', bbox_inches='tight')
+    # plt.show()
+
     end_query_time = time.time()
     build_time = time.time()
     query_time = end_query_time - start_query_time
