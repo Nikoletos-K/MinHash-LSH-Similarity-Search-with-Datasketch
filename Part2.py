@@ -9,9 +9,6 @@
 # - Konstantinos Nikoletos 
 # - Konstantinos Plas
 
-# ## Question 2.1: Nearest Neighbor Search without and with Locality Sensitive Hashing
-# 
-
 import pandas as pd
 from tqdm import tqdm
 
@@ -53,17 +50,13 @@ manual_stop_words = {'include', 'way', 'work', 'look', 'add', 'time', 'year', 'o
 stop_words= stop_words_nltk.union(stop_words_pypi)
 stop_words = stop_words.union(manual_stop_words)
 
-
-# In[4]:
-
-
 # stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
 def preprocess_text(text):
     processed_text = text.lower()
-    processed_text = re.sub(r'\W', ' ', str(text))
+    processed_text = re.sub(r'\W', ' ', str(processed_text))
     processed_text = re.sub(r'\s+[a-zA-Z]\s+', ' ', processed_text)
     processed_text = re.sub(r'\^[a-zA-Z]\s+', ' ', processed_text)
     processed_text = re.sub(r'\s+', ' ', processed_text, flags=re.I)
@@ -74,10 +67,6 @@ def preprocess_text(text):
     processed_text = ' '.join(tokens)
 
     return processed_text
-
-
-# In[5]:
-
 
 # from tqdm.notebook import tqdm
 import os
@@ -104,8 +93,8 @@ else:
     print("[TEST] Reading from file")
     test_data = pd.read_csv(preprocessed_file_path_test)
 
-train_data = train_data.head(100)
-test_data = test_data.head(100)
+# train_data = train_data.head(100)
+# test_data = test_data.head(100)
 
 import time
 import pandas as pd
@@ -114,41 +103,10 @@ from sklearn.neighbors import NearestNeighbors
 from datasketch import MinHashLSH, MinHash
 import numpy as np
 
-# def jaccard_similarity(a, b):
-#     intersection_size = len(set(a) & set(b))
-#     union_size = len(set(a) | set(b))
-
-#     return intersection_size / union_size if union_size > 0 else 0.0
-
-# def jaccard_similarity(a, b):
-    
-#     a = a.toarray()
-#     b = b.toarray()
-    
-#     set_a = set(a)
-#     set_b = set(b)
-    
-#     intersection_size = len(np.intersect1d(a, b))
-#     union_size = len(set_a) + len(set_b) - intersection_size
-    
-#     return intersection_size / union_size if union_size > 0 else 0.0
-
-# def jaccard_similarity(set1, set2):
-#     set1 = set1.toarray()
-#     set2 = set2.toarray()
-#     intersection_size = len(np.intersect1d(set1, set2))
-#     union_size = len(np.union1d(set1, set2))
-    
-#     if union_size == 0:
-#         return 0.0  # Jaccard similarity is 0 if the sets are both empty
-#     else:
-#         return intersection_size / union_size
-
 from scipy.spatial.distance import jaccard
 
 def jacc_sim(a, b):
     return 1-jaccard(a,b)
-
 
 test_data_aslist = test_data['text'].tolist()
 train_data_aslist = train_data['text'].tolist()
@@ -159,7 +117,7 @@ threshold = 0.3  # Similarity threshold for LSH
 
 # Create TF-IDF vectorizer
 vectorizer = CountVectorizer(max_features=1024)
-# vectorizer = TfidfVectorizer()
+# vectorizer = TfidfVectorizer(max_features=1024)
 
 X_train_tfidf = vectorizer.fit_transform(train_data['text'])
 X_test_tfidf = vectorizer.transform(test_data['text'])
@@ -179,6 +137,7 @@ if os.path.exists('true_knn_distances.npy') and os.path.exists('true_knn_indices
     print("Loading true KNN distances and indices from file...")
     true_knn_distances = np.load('true_knn_distances.npy')
     true_knn_indices = np.load('true_knn_indices.npy')
+    print("Finished loading true KNN distances and indices from file.")
 else:
     true_knn = NearestNeighbors(n_neighbors=k_neighbors, algorithm='brute', metric=jacc_sim).fit(X_train_dense)
     true_knn_distances, true_knn_indices = true_knn.kneighbors(X_test_dense)
@@ -197,21 +156,20 @@ def lsh_knn(candidates, train_set, test_doc):
 
     return k_most_similar, similarities
 
+print("Calculating LSH...")
 for num_perm in num_permutations:
+    print(f"Calculating LSH for num_perm={num_perm}...")
     lsh = MinHashLSH(threshold=threshold, num_perm=num_perm)
 
     minhash_signatures_train = []
     for i, doc in enumerate(train_data_aslist):
-        # print("doc: ", doc)
         minhash = MinHash(num_perm=num_perm)
         for word in set(doc.split()):
-            # print("word: ", word)
             minhash.update(word.encode('utf8'))
         minhash_signatures_train.append(minhash)
     
-    # print("minhash_signatures_train: ", len(minhash_signatures_train))
+    print("Finished calculating LSH.")
     for i, minhash in enumerate(minhash_signatures_train):
-        # print("i: ", i, "minhash: ", minhash)
         lsh.insert(i, minhash)
 
     start_query_time = time.time()
@@ -221,15 +179,13 @@ for num_perm in num_permutations:
     lsh_indices = []
     lsh_distances = []
     avg_bucket_size = []
-    for i, doc in enumerate(test_data_aslist):
+    print("Calculating LSH KNN...")
+    for i, doc in tqdm(enumerate(test_data_aslist)):
         minhash = MinHash(num_perm=num_perm)
-        # print("testdoc: ", doc)
         for word in set(doc.split()):
-            # print("word: ", word)
             minhash.update(word.encode('utf8'))
 
         candidates = lsh.query(minhash)
-        # print(candidates)
         similarities = true_knn_distances[i]
         true_indices = true_knn_indices[i]
         
@@ -242,13 +198,13 @@ for num_perm in num_permutations:
 #             lsh_indices.append(bucket_indices)
 #             lsh_distances.append(bucket_distances)
     
-    # print(f"Average Bucket Size: {sum(avg_bucket_size) / len(avg_bucket_size)}")
-    # # plot histogram of bucket sizes
-    # plt.hist(avg_bucket_size, bins=20)
-    # plt.xlabel("Bucket Size")
-    # plt.ylabel("Frequency")
-    # plt.title("Histogram of Bucket Sizes")
-    # plt.show()
+    print(f"Average Bucket Size: {sum(avg_bucket_size) / len(avg_bucket_size)}")
+    # plot histogram of bucket sizes
+    plt.hist(avg_bucket_size, bins=20)
+    plt.xlabel("Bucket Size")
+    plt.ylabel("Frequency")
+    plt.title("Histogram of Bucket Sizes")
+    plt.show()
     
     end_query_time = time.time()
     build_time = time.time()
