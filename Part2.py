@@ -93,8 +93,14 @@ else:
     print("[TEST] Reading from file")
     test_data = pd.read_csv(preprocessed_file_path_test)
 
+
+
+
 # train_data = train_data.head(100)
 # test_data = test_data.head(100)
+
+# train_data['text'] = train_data['text'].progress_apply(preprocess_text)
+# test_data['text'] = test_data['text'].progress_apply(preprocess_text)
 
 import time
 import pandas as pd
@@ -113,10 +119,10 @@ train_data_aslist = train_data['text'].tolist()
 
 # Define parameters
 k_neighbors = 15  # Number of neighbors for K-NN
-threshold = 0.8  # Similarity threshold for LSH
+threshold = 0.0  # Similarity threshold for LSH
 
 # Create TF-IDF vectorizer
-vectorizer = CountVectorizer(max_features=1024)
+vectorizer = CountVectorizer(max_features=2056)
 # vectorizer = TfidfVectorizer(max_features=1024)
 
 X_train_tfidf = vectorizer.fit_transform(train_data['text'])
@@ -139,13 +145,18 @@ if os.path.exists('true_knn_distances.npy') and os.path.exists('true_knn_indices
     true_knn_indices = np.load('true_knn_indices.npy')
     print("Finished loading true KNN distances and indices from file.")
 else:
-    true_knn = NearestNeighbors(n_neighbors=k_neighbors, algorithm='brute', metric=jacc_sim).fit(X_train_dense)
+    true_knn = NearestNeighbors(n_neighbors=k_neighbors, algorithm='brute', metric=jacc_sim, n_jobs=-1).fit(X_train_dense)
     true_knn_distances, true_knn_indices = true_knn.kneighbors(X_test_dense)
     print("Finished calculating KNN.")
     print(f"KNN Time: {time.time() - start_knn_time:.4f} seconds")
 
     np.save('true_knn_distances.npy', true_knn_distances)
     np.save('true_knn_indices.npy', true_knn_indices)
+
+# print(true_knn_distances)
+
+# print(X_train_dense[0])
+# print(X_test_dense[1])
 
 def lsh_knn(candidates, train_set, test_doc):
     similarities = [(idx, jaccard_similarity(set(test_doc.split()), set(train_set[idx].split())))
@@ -166,6 +177,7 @@ for num_perm in num_permutations:
     for i, doc in tqdm(enumerate(train_data_aslist)):
         minhash = MinHash(num_perm=num_perm)
         for word in set(doc.split()):
+            # print("-",word)
             minhash.update(word.encode('utf8'))
         minhash_signatures_train.append(minhash)
 
@@ -184,6 +196,7 @@ for num_perm in num_permutations:
     for i, doc in tqdm(enumerate(test_data_aslist)):
         minhash = MinHash(num_perm=num_perm)
         for word in set(doc.split()):
+            # print(word)
             minhash.update(word.encode('utf8'))
 
         candidates = lsh.query(minhash)
@@ -198,7 +211,6 @@ for num_perm in num_permutations:
 #             bucket_indices, bucket_distances = lsh_knn(candidates, train_data_aslist, doc)
 #             lsh_indices.append(bucket_indices)
 #             lsh_distances.append(bucket_distances)
-    
     print(f"Average Bucket Size: {sum(avg_bucket_size) / len(avg_bucket_size)}")
     # plot histogram of bucket sizes
     plt.hist(avg_bucket_size, bins=20)
