@@ -62,9 +62,9 @@ def preprocess_text(text):
     processed_text = re.sub(r'\s+', ' ', processed_text, flags=re.I)
     processed_text = re.sub(r'^b\s+', '', processed_text)
 
-    tokens = [lemmatizer.lemmatize(word) for word in processed_text.split() if word not in stop_words]
-    tokens = [token for token in tokens if token not in stop_words]
-    processed_text = ' '.join(tokens)
+    # tokens = [lemmatizer.lemmatize(word) for word in processed_text.split() if word not in stop_words]
+    # tokens = [token for token in tokens if token not in stop_words]
+    # processed_text = ' '.join(tokens)
 
     return processed_text
 
