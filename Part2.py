@@ -96,8 +96,8 @@ else:
 
 
 
-# train_data = train_data.head(100)
-# test_data = test_data.head(100)
+train_data = train_data.head(100)
+test_data = test_data.head(100)
 
 # train_data['text'] = train_data['text'].progress_apply(preprocess_text)
 # test_data['text'] = test_data['text'].progress_apply(preprocess_text)
@@ -119,7 +119,7 @@ train_data_aslist = train_data['text'].tolist()
 
 # Define parameters
 k_neighbors = 15  # Number of neighbors for K-NN
-threshold = 0.0  # Similarity threshold for LSH
+threshold = 0.8  # Similarity threshold for LSH
 
 # Create TF-IDF vectorizer
 vectorizer = CountVectorizer(max_features=2056)
@@ -201,17 +201,32 @@ for num_perm in num_permutations:
 
         candidates = lsh.query(minhash)
         similarities = true_knn_distances[i]
+        
+        # print(f"True indices: {true_knn_indices[i]}")
         true_indices = true_knn_indices[i]
+        
+        true_indices = [true_knn_indices[i][j] for j in range(15) if similarities[j] > threshold]
 
         avg_bucket_size.append(len(candidates))
-        num_of_true_docs = sum(1 for item in candidates if item in true_indices)
-        total_fraction += (num_of_true_docs / true_indices.shape[0])
+        # true_ = [idx for idx in true_indices if similarities[idx] > threshold]
+        
+        # print(f"SFTER True indices: {true_indices}")
+        # print(f"Candidates: {candidates}")  
+        # print(f"Similarities: {similarities}")
+        if len(candidates)>0 and len(true_indices)>0:
+            num_of_true_docs = sum(1 for item in candidates if item in true_indices)
+            total_fraction += (num_of_true_docs / len(true_indices))
+        elif len(true_indices)==0:
+            total_fraction += 1
+        # else:
+        #     print("WHAT????????")
+
         # exit(1)
 #         if candidates:
 #             bucket_indices, bucket_distances = lsh_knn(candidates, train_data_aslist, doc)
 #             lsh_indices.append(bucket_indices)
 #             lsh_distances.append(bucket_distances)
-    print(f"Average Bucket Size: {sum(avg_bucket_size) / len(avg_bucket_size)}")
+    # print(f"Average Bucket Size: {sum(avg_bucket_size) / len(avg_bucket_size)}")
     # plot histogram of bucket sizes
     plt.hist(avg_bucket_size, bins=20)
     plt.xlabel("Bucket Size")
@@ -231,5 +246,5 @@ for num_perm in num_permutations:
     print(f"Total Time (TotalTime): {total_time:.4f} seconds")
     accuracy = total_fraction / len(test_data_aslist)
     print(f"Average Bucket Size: {sum(avg_bucket_size) / len(avg_bucket_size)}")
-    print(f"Fraction of True K-most similar documents: {accuracy:.4f}")
-
+    print(f"> Fraction of True K-most similar documents: {accuracy:.4f}")
+    print("\n\n")
