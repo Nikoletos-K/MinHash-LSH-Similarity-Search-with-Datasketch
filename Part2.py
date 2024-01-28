@@ -96,8 +96,8 @@ else:
 
 
 
-train_data = train_data.head(100)
-test_data = test_data.head(100)
+# train_data = train_data.head(100)
+# test_data = test_data.head(100)
 
 # train_data['text'] = train_data['text'].progress_apply(preprocess_text)
 # test_data['text'] = test_data['text'].progress_apply(preprocess_text)
@@ -154,7 +154,8 @@ else:
     np.save('true_knn_indices.npy', true_knn_indices)
 
 # print(true_knn_distances)
-
+count_greater_than_threshold = np.sum(true_knn_distances > threshold)
+print(f"Number of pairs with similarity > {threshold}: {count_greater_than_threshold}")
 # print(X_train_dense[0])
 # print(X_test_dense[1])
 
