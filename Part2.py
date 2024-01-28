@@ -62,9 +62,9 @@ def preprocess_text(text):
     processed_text = re.sub(r'\s+', ' ', processed_text, flags=re.I)
     processed_text = re.sub(r'^b\s+', '', processed_text)
 
-    # tokens = [lemmatizer.lemmatize(word) for word in processed_text.split() if word not in stop_words]
-    # tokens = [token for token in tokens if token not in stop_words]
-    # processed_text = ' '.join(tokens)
+    tokens = [lemmatizer.lemmatize(word) for word in processed_text.split() if word not in stop_words]
+    tokens = [token for token in tokens if token not in stop_words]
+    processed_text = ' '.join(tokens)
 
     return processed_text
 
@@ -93,8 +93,8 @@ else:
     print("[TEST] Reading from file")
     test_data = pd.read_csv(preprocessed_file_path_test)
 
-# train_data = train_data.head(100)
-# test_data = test_data.head(100)
+train_data = train_data.head(100)
+test_data = test_data.head(100)
 
 # train_data['text'] = train_data['text'].progress_apply(preprocess_text)
 # test_data['text'] = test_data['text'].progress_apply(preprocess_text)
@@ -108,8 +108,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.neighbors import NearestNeighbors
 from datasketch import MinHashLSH, MinHash
 import numpy as np
-
 from scipy.spatial.distance import jaccard
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 def jacc_sim(a, b):
     return 1-jaccard(a,b)
@@ -118,23 +118,27 @@ test_data_aslist = test_data['text'].tolist()
 train_data_aslist = train_data['text'].tolist()
 
 # Define parameters
-k_neighbors = 15  # Number of neighbors for K-NN
-threshold = 0.8  # Similarity threshold for LSH
+k_neighbors = 100  # Number of neighbors for K-NN
+threshold = 0.0  # Similarity threshold for LSH
 
 # Create TF-IDF vectorizer
 # vectorizer = CountVectorizer(max_features=2056, ngram_range=(1, 3), analyzer='char')
 # vectorizer = TfidfVectorizer(max_features=1024)
 vectorizer = CountVectorizer(max_features=2056)
 
-X_train_tfidf = vectorizer.fit_transform(train_data['text'])
-X_test_tfidf = vectorizer.transform(test_data['text'])
+X_train = vectorizer.fit_transform(train_data['text'])
+X_test = vectorizer.transform(test_data['text'])
 
 # Build MinHash LSH index
 num_permutations = [16, 32, 64]
 
 # Convert sparse matrices to dense arrays
-X_train_dense = X_train_tfidf.toarray()
-X_test_dense = X_test_tfidf.toarray()
+X_train_dense = X_train.toarray()
+X_test_dense = X_test.toarray()
+
+scaler = StandardScaler()
+X_train_dense = scaler.fit_transform(X_train_dense)
+X_test_dense = scaler.transform(X_test_dense)
 
 print("Calculating KNN...")
 start_knn_time = time.time()
@@ -222,6 +226,7 @@ for num_perm in num_permutations:
             minhash.update(word.encode('utf8'))
 
         candidates = lsh.query(minhash)
+        # print(candidates)
         similarities = true_knn_distances[i]
         
         # print(f"True indices: {true_knn_indices[i]}")
