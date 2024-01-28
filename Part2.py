@@ -93,14 +93,14 @@ else:
     print("[TEST] Reading from file")
     test_data = pd.read_csv(preprocessed_file_path_test)
 
-
-
-
 # train_data = train_data.head(100)
 # test_data = test_data.head(100)
 
 # train_data['text'] = train_data['text'].progress_apply(preprocess_text)
 # test_data['text'] = test_data['text'].progress_apply(preprocess_text)
+
+
+
 
 import time
 import pandas as pd
@@ -122,8 +122,9 @@ k_neighbors = 15  # Number of neighbors for K-NN
 threshold = 0.8  # Similarity threshold for LSH
 
 # Create TF-IDF vectorizer
-vectorizer = CountVectorizer(max_features=2056)
+# vectorizer = CountVectorizer(max_features=2056, ngram_range=(1, 3), analyzer='char')
 # vectorizer = TfidfVectorizer(max_features=1024)
+vectorizer = CountVectorizer(max_features=2056)
 
 X_train_tfidf = vectorizer.fit_transform(train_data['text'])
 X_test_tfidf = vectorizer.transform(test_data['text'])
@@ -150,8 +151,28 @@ else:
     print("Finished calculating KNN.")
     print(f"KNN Time: {time.time() - start_knn_time:.4f} seconds")
 
-    np.save('true_knn_distances.npy', true_knn_distances)
-    np.save('true_knn_indices.npy', true_knn_indices)
+    # np.save('true_knn_distances.npy', true_knn_distances)
+    # np.save('true_knn_indices.npy', true_knn_indices)
+
+# Create heatmap for true KNN distances seaborn
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.heatmap(true_knn_distances)
+plt.xlabel("KNN Index")
+plt.ylabel("Test Data Index")
+plt.title("Heatmap of True KNN Distances")
+
+plt.show()
+
+
+#  Histogram of true KNN distances
+plt.hist(true_knn_distances.flatten(), bins=20)
+plt.xlabel("Distance")
+plt.ylabel("Frequency")
+plt.title("Histogram of True KNN Distances")
+plt.show()
+# plt.savefig('histogram.png', bbox_inches='tight')
 
 # print(true_knn_distances)
 count_greater_than_threshold = np.sum(true_knn_distances > threshold)
