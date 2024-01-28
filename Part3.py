@@ -110,29 +110,9 @@ def random_projection_hashing(train_vectors, test_vectors, train_data, k=5):
     print('Build time: {}'.format(build_time))
     print('Query time: {}'.format(time.time() - query_time))
     print('Total time: {}'.format(time.time() - total_time))
-    print("Cardinality: ", train_vectors.shape[0]*test_vectors.shape[0])
+    print("Cardinality: ", sum(num_candidates_per_test_doc))
     
     return num_duplicates, num_candidates_per_test_doc
-
-def exact_jaccard_vectors(train_vectors, test_vectors):
-    total_time = time.time()    
-    def jaccard_similarity(x,y):
-        return 1 - jaccard(x,y)
-    
-    num_duplicates = 0    
-    for i in tqdm(range(test_vectors.shape[0])):
-        for j in range(train_vectors.shape[0]):
-            similarity = jaccard_similarity(test_vectors[i], train_vectors[j])
-            if similarity > 0.8:
-                num_duplicates += 1
-                break
-
-    print('Duplicates: {}'.format(num_duplicates))
-    print('Query time: {}'.format(time.time() - total_time))
-    print("Cardinality: ", train_vectors.shape[0]*test_vectors.shape[0])
-
-    return num_duplicates
-
     
 def jaccard_similarity(x: str, y: str):
     x_set = set(x.lower().split())
@@ -241,6 +221,7 @@ def __main__():
         num_duplicates, num_candidates_per_test_doc = random_projection_hashing(X_train, X_test, train_data, k)
         cardinalities.append(sum(num_candidates_per_test_doc))
         duplicates_per_k.append(num_duplicates)
+
     # Plot cardinalities
     plt.plot(range(1, 10+1), cardinalities)
     plt.xlabel('k')
@@ -254,10 +235,7 @@ def __main__():
     plt.ylabel('Duplicates')
     plt.title('Duplicates vs k')
     plt.show()    
-    
-    print("\n\n# Exact Jaccard similarity - Vectors")
-    exact_jaccard_vectors(X_train.toarray(), X_test.toarray())
-    
+        
     print("\n\n# Exact Jaccard similarity - Tokens")
     exact_jaccard_tokens(train_data['text'].tolist(), test_data['text'].tolist())
 
