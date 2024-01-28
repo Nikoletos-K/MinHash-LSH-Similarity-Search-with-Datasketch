@@ -162,7 +162,7 @@ sns.heatmap(true_knn_distances)
 plt.xlabel("KNN Index")
 plt.ylabel("Test Data Index")
 plt.title("Heatmap of True KNN Distances")
-
+plt.savefig('heatmap.png', bbox_inches='tight')
 plt.show()
 
 
@@ -171,8 +171,8 @@ plt.hist(true_knn_distances.flatten(), bins=20)
 plt.xlabel("Distance")
 plt.ylabel("Frequency")
 plt.title("Histogram of True KNN Distances")
+plt.savefig('histogram.png', bbox_inches='tight')
 plt.show()
-# plt.savefig('histogram.png', bbox_inches='tight')
 
 # print(true_knn_distances)
 count_greater_than_threshold = np.sum(true_knn_distances > threshold)
