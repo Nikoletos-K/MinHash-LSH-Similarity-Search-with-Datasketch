@@ -93,8 +93,8 @@ else:
     print("[TEST] Reading from file")
     test_data = pd.read_csv(preprocessed_file_path_test)
 
-train_data = train_data.head(100)
-test_data = test_data.head(100)
+# train_data = train_data.head(100)
+# test_data = test_data.head(100)
 
 # train_data['text'] = train_data['text'].progress_apply(preprocess_text)
 # test_data['text'] = test_data['text'].progress_apply(preprocess_text)
@@ -118,13 +118,13 @@ test_data_aslist = test_data['text'].tolist()
 train_data_aslist = train_data['text'].tolist()
 
 # Define parameters
-k_neighbors = 100  # Number of neighbors for K-NN
+k_neighbors = 15  # Number of neighbors for K-NN
 threshold = 0.0  # Similarity threshold for LSH
 
 # Create TF-IDF vectorizer
 # vectorizer = CountVectorizer(max_features=2056, ngram_range=(1, 3), analyzer='char')
 # vectorizer = TfidfVectorizer(max_features=1024)
-vectorizer = CountVectorizer(max_features=2056)
+vectorizer = CountVectorizer(max_features=1024)
 
 X_train = vectorizer.fit_transform(train_data['text'])
 X_test = vectorizer.transform(test_data['text'])
@@ -167,7 +167,7 @@ plt.xlabel("KNN Index")
 plt.ylabel("Test Data Index")
 plt.title("Heatmap of True KNN Distances")
 plt.savefig('heatmap.png', bbox_inches='tight')
-plt.show()
+# plt.show()
 
 
 #  Histogram of true KNN distances
@@ -176,7 +176,7 @@ plt.xlabel("Distance")
 plt.ylabel("Frequency")
 plt.title("Histogram of True KNN Distances")
 plt.savefig('histogram.png', bbox_inches='tight')
-plt.show()
+# plt.show()
 
 # print(true_knn_distances)
 count_greater_than_threshold = np.sum(true_knn_distances > threshold)
