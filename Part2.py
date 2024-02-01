@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Part 2: Nearest Neighbor Search with Locality Sensitive Hashing
-# 
-# 
+# Part 2: Nearest Neighbor Search with Locality Sensitive Hashing
 # 
 # Students:
 # - Konstantinos Nikoletos 
@@ -50,7 +48,6 @@ manual_stop_words = {'include', 'way', 'work', 'look', 'add', 'time', 'year', 'o
 stop_words= stop_words_nltk.union(stop_words_pypi)
 stop_words = stop_words.union(manual_stop_words)
 
-# stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
@@ -68,7 +65,6 @@ def preprocess_text(text):
 
     return processed_text
 
-# from tqdm.notebook import tqdm
 import os
 from tqdm.auto import tqdm  # for notebooks
 tqdm.pandas()
@@ -99,8 +95,7 @@ else:
 # train_data['text'] = train_data['text'].progress_apply(preprocess_text)
 # test_data['text'] = test_data['text'].progress_apply(preprocess_text)
 
-
-
+# LSH implementation
 
 import time
 import pandas as pd
@@ -117,14 +112,12 @@ def jacc_sim(a, b):
 test_data_aslist = test_data['text'].tolist()
 train_data_aslist = train_data['text'].tolist()
 
-# Define parameters
+# Parameters
 k_neighbors = 15  # Number of neighbors for K-NN
 threshold = 0.0  # Similarity threshold for LSH
 
-# Create TF-IDF vectorizer
-# vectorizer = CountVectorizer(max_features=2056, ngram_range=(1, 3), analyzer='char')
-# vectorizer = TfidfVectorizer(max_features=1024)
-vectorizer = CountVectorizer(max_features=1024)
+# Create vectorizer
+vectorizer = CountVectorizer(max_features=512)
 
 X_train = vectorizer.fit_transform(train_data['text'])
 X_test = vectorizer.transform(test_data['text'])
@@ -143,22 +136,22 @@ X_test_dense = scaler.transform(X_test_dense)
 print("Calculating KNN...")
 start_knn_time = time.time()
 
-# Check if the true KNN distances and indices have already been calculated
+# If the true KNN distances and indices have already been calculated
 if os.path.exists('true_knn_distances.npy') and os.path.exists('true_knn_indices.npy'):
     print("Loading true KNN distances and indices from file...")
     true_knn_distances = np.load('true_knn_distances.npy')
     true_knn_indices = np.load('true_knn_indices.npy')
     print("Finished loading true KNN distances and indices from file.")
 else:
-    true_knn = NearestNeighbors(n_neighbors=k_neighbors, algorithm='brute', metric=jacc_sim, n_jobs=-1).fit(X_train_dense)
+    true_knn = NearestNeighbors(n_neighbors=k_neighbors, algorithm='brute', metric=jaccard, n_jobs=4).fit(X_train_dense)
     true_knn_distances, true_knn_indices = true_knn.kneighbors(X_test_dense)
     print("Finished calculating KNN.")
     print(f"KNN Time: {time.time() - start_knn_time:.4f} seconds")
 
-    # np.save('true_knn_distances.npy', true_knn_distances)
-    # np.save('true_knn_indices.npy', true_knn_indices)
+    np.save('true_knn_distances.npy', true_knn_distances)
+    np.save('true_knn_indices.npy', true_knn_indices)
 
-# Create heatmap for true KNN distances seaborn
+# Heatmap for true KNN distances seaborn
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -178,21 +171,8 @@ plt.title("Histogram of True KNN Distances")
 plt.savefig('histogram.png', bbox_inches='tight')
 # plt.show()
 
-# print(true_knn_distances)
 count_greater_than_threshold = np.sum(true_knn_distances > threshold)
 print(f"Number of pairs with similarity > {threshold}: {count_greater_than_threshold}")
-# print(X_train_dense[0])
-# print(X_test_dense[1])
-
-def lsh_knn(candidates, train_set, test_doc):
-    similarities = [(idx, jaccard_similarity(set(test_doc.split()), set(train_set[idx].split())))
-                    for idx in candidates]
-
-    sorted_similarities = sorted(similarities, key=lambda x: x[1], reverse=True)
-    k_most_similar = sorted_similarities[:k_neighbors]
-
-    return k_most_similar, similarities
-
 print("Calculating LSH...")
 for num_perm in num_permutations:
     print(f"Calculating LSH for num_perm={num_perm} and threshold={threshold}...")
@@ -203,7 +183,6 @@ for num_perm in num_permutations:
     for i, doc in tqdm(enumerate(train_data_aslist)):
         minhash = MinHash(num_perm=num_perm)
         for word in set(doc.split()):
-            # print("-",word)
             minhash.update(word.encode('utf8'))
         minhash_signatures_train.append(minhash)
 
@@ -222,45 +201,25 @@ for num_perm in num_permutations:
     for i, doc in tqdm(enumerate(test_data_aslist)):
         minhash = MinHash(num_perm=num_perm)
         for word in set(doc.split()):
-            # print(word)
             minhash.update(word.encode('utf8'))
 
         candidates = lsh.query(minhash)
-        # print(candidates)
         similarities = true_knn_distances[i]
-        
-        # print(f"True indices: {true_knn_indices[i]}")
-        true_indices = true_knn_indices[i]
-        
+        true_indices = true_knn_indices[i]        
         true_indices = [true_knn_indices[i][j] for j in range(15) if similarities[j] > threshold]
-
         avg_bucket_size.append(len(candidates))
-        # true_ = [idx for idx in true_indices if similarities[idx] > threshold]
-        
-        # print(f"SFTER True indices: {true_indices}")
-        # print(f"Candidates: {candidates}")  
-        # print(f"Similarities: {similarities}")
+
         if len(candidates)>0 and len(true_indices)>0:
             num_of_true_docs = sum(1 for item in candidates if item in true_indices)
             total_fraction += (num_of_true_docs / len(true_indices))
         elif len(true_indices)==0:
             total_fraction += 1
-        # else:
-        #     print("WHAT????????")
 
-        # exit(1)
-#         if candidates:
-#             bucket_indices, bucket_distances = lsh_knn(candidates, train_data_aslist, doc)
-#             lsh_indices.append(bucket_indices)
-#             lsh_distances.append(bucket_distances)
-    # print(f"Average Bucket Size: {sum(avg_bucket_size) / len(avg_bucket_size)}")
-    # plot histogram of bucket sizes
     plt.hist(avg_bucket_size, bins=20)
     plt.xlabel("Bucket Size")
     plt.ylabel("Frequency")
     plt.title("Histogram of Bucket Sizes")
     plt.savefig('buckets_'+str(num_perm)+'.png', bbox_inches='tight')
-    # plt.show()
 
     end_query_time = time.time()
     build_time = time.time()
