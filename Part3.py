@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Part 3: 
+# Part 3: : Nearest Neighbor Search and Duplicate Detection,
+#             Question 3.1: De-Duplication with Locality Sensitive Hashing
 # 
 # Students:
 # - Konstantinos Nikoletos 

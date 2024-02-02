@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Part 1: Text classification
+# Part 1: Text classification
 # 
 # Students:
 # - Konstantinos Nikoletos
 # - Konstantinos Plas
 
-# ## Question 1.1: Get to know the Data: WordCloud
-
-# In[1]:
-
+# Question 1.1: Get to know the Data: WordCloud
 
 import pandas as pd
 from tqdm import tqdm
@@ -28,11 +25,7 @@ import matplotlib.pyplot as plt
 nltk.download('stopwords')
 nltk.download('punkt')
 
-
-# ## Reading the dataset
-
-# In[2]:
-
+# Reading the dataset
 
 train_data = pd.read_csv('./Part-1/data/train.csv', sep=',')
 test_data = pd.read_csv('./Part-1/data/test_without_labels.csv', sep=',')
@@ -46,11 +39,7 @@ print("\nTest data shape: ", test_data.shape)
 print(test_data.head())
 test_data['text'] = test_data['Title'] + " " + test_data['Content']
 
-
-# ## WordCloud Source code
-
-# In[3]:
-
+# WordCloud Source code
 
 def generate_wordcloud(text, title="WordCloud"):
     wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
@@ -64,59 +53,37 @@ def generate_wordcloud(text, title="WordCloud"):
     print("Saving the word cloud...")
     plt.savefig(title+'.png', bbox_inches='tight')
 
-
-# ### Entertainment WordCloud
-
-# In[4]:
-
+# Entertainment WordCloud
 
 text = " ".join(review for review in train_data[train_data['Label']=='Entertainment']['text'])
 generate_wordcloud(text, title="Entertainment")
 print("Entertainment Word cloud generated.")
 
-
-# ### Technology WordCloud
-
-# In[5]:
-
+# Technology WordCloud
 
 text = " ".join(review for review in train_data[train_data['Label']=='Technology']['text'])
 generate_wordcloud(text, title="Technology")
 print("Technology Word cloud generated.")
 
-
-# ### Health WordCloud
-
-# In[6]:
-
+# Health WordCloud
 
 text = " ".join(review for review in train_data[train_data['Label']=='Health']['text'])
 generate_wordcloud(text, title="Health")
 print("Health Word cloud generated.")
 
-
-# ### Business WordCloud
-
-# In[7]:
-
+# Business WordCloud
 
 text = " ".join(review for review in train_data[train_data['Label']=='Business']['text'])
 generate_wordcloud(text, title="Business")
 print("Business Word cloud generated.")
 
-
-# ## Printing again WordClouds but having processed the text
-
-# In[8]:
-
+# Printing again WordClouds but having processed the text
 
 from stop_words import get_stop_words
 stop_words_pypi = set(get_stop_words('en'))
-# print(stop_words_pypi)
 
 from nltk.corpus import stopwords
 stop_words_nltk = set(stopwords.words('english'))
-# print(stop_words_nltk)
 
 manual_stop_words = {'include', 'way', 'work', 'look', 'add', 'time', 'year', 'one', \
                      'month', 'day', 'help', 'think', 'tell', 'new', 'said', 'say',\
@@ -125,11 +92,6 @@ manual_stop_words = {'include', 'way', 'work', 'look', 'add', 'time', 'year', 'o
 stop_words= stop_words_nltk.union(stop_words_pypi)
 stop_words = stop_words.union(manual_stop_words)
 
-
-# In[9]:
-
-
-# stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
@@ -147,11 +109,6 @@ def preprocess_text(text):
 
     return processed_text
 
-
-# In[12]:
-
-
-# from tqdm.notebook import tqdm
 import os
 from tqdm.auto import tqdm  # for notebooks
 tqdm.pandas()
@@ -176,49 +133,36 @@ else:
     print("[TEST] Reading from file")
     test_data = pd.read_csv(preprocessed_file_path_test)
 
-
-# ### Entertainment WordCloud
+# Entertainment WordCloud
 
 text = " ".join(review for review in train_data[train_data['Label']=='Entertainment']['text'])
-generate_wordcloud(text, title="Entertainment")
+generate_wordcloud(text, title="Entertainment_Preprocessed")
 print("Entertainment Word cloud generated.")
 
 
-# ### Technology WordCloud
+# Technology WordCloud
 text = " ".join(review for review in train_data[train_data['Label']=='Technology']['text'])
-generate_wordcloud(text, title="Technology")
+generate_wordcloud(text, title="Technology_Preprocessed")
 print("Technology Word cloud generated.")
 
 
-# ### Health WordCloud
+# Health WordCloud
 text = " ".join(review for review in train_data[train_data['Label']=='Health']['text'])
-generate_wordcloud(text, title="Health")
+generate_wordcloud(text, title="Health_Preprocessed")
 print("Health Word cloud generated.")
 
-
-# ### Business WordCloud
-
-# In[16]:
-
+# Business WordCloud
 
 text = " ".join(review for review in train_data[train_data['Label']=='Business']['text'])
-generate_wordcloud(text, title="Business")
+generate_wordcloud(text, title="Business_Preprocessed")
 print("Business Word cloud generated.")
 
 
-# ## Question 1.2: Classification Task
+# Question 1.2: Classification Task
+# train_data = train_data.head(1000)
+# test_data = test_data.head(1000)
 
-# In[17]:
-
-
-train_data = train_data.head(1000)
-test_data = test_data.head(1000)
-
-
-# ### BoW, Tf-Idf vectorization with K-fold for SVM and RandomForest
-
-# In[18]:
-
+# BoW, Tf-Idf vectorization with K-fold for SVM and RandomForest
 
 from sklearn.model_selection import cross_val_predict, cross_val_score, train_test_split, StratifiedKFold
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
@@ -228,38 +172,31 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 import numpy as np
-
-
-# In[19]:
-
+from sklearn.decomposition import TruncatedSVD
 
 X = train_data['text'].astype(str)
 y = train_data['Label']
 
-vectorizer = CountVectorizer()
+vectorizer = CountVectorizer(max_features=1024)
 X_train_bow = vectorizer.fit_transform(train_data['text'])
 X_test_bow = vectorizer.transform(test_data['text'])
 
-vectorizer = TfidfVectorizer()
-X_train_tfidf = vectorizer.fit_transform(train_data['text'])
-X_test_tfidf = vectorizer.transform(test_data['text'])
-
-
-# In[20]:
-
+# vectorizer = TfidfVectorizer(max_features=1024)
+# X_train_tfidf = vectorizer.fit_transform(train_data['text'])
+# X_test_tfidf = vectorizer.transform(test_data['text'])
 
 svm_classifier = SVC(kernel='linear')
 rf_classifier = RandomForestClassifier(n_estimators=1000, max_features='sqrt', n_jobs=-1)
-vectorizers = ['TF-IDF', 'BoW']
-
-
-# In[21]:
-
+vectorizers = ['SVD', 'BoW']
 
 for classifier_name, classifier in [('SVM', svm_classifier), ('Random Forest', rf_classifier)]:
     for vectorizer in vectorizers:
 
-        X = X_train_tfidf if vectorizer == 'TF-IDF' else X_train_bow
+        X = X_train_bow
+
+        if vectorizer == 'SVD':
+            svd = TruncatedSVD(n_components=100)
+            X = svd.fit_transform(X)
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -283,23 +220,12 @@ for classifier_name, classifier in [('SVM', svm_classifier), ('Random Forest', r
         print(classification_report(y_test, predictions))
 
 
-# ### Best model - LinearSVC with Tf-Idf
-
-# In[22]:
-
+# Best model - LinearSVC with Tf-Idf
 
 from sklearn.preprocessing import LabelEncoder
 
-
-# In[23]:
-
-
-train_data = train_data.head(2000)
+# train_data = train_data.head(2000)
 # test_data = test_data.head(1000)
-
-
-# In[24]:
-
 
 label_encoder = LabelEncoder()
 train_data['_Label'] = label_encoder.fit_transform(train_data['Label'])
@@ -313,10 +239,6 @@ X_test_tfidf = vectorizer.transform(test_data['text'])
 
 X_train, X_test, y_train, y_test = train_test_split(X_train_tfidf, y, test_size=0.2, random_state=42)
 
-
-# In[31]:
-
-
 from sklearn.svm import LinearSVC
 
 classifier = LinearSVC(random_state=42, tol=1e-5)
@@ -327,16 +249,12 @@ precision = precision_score(y_test, predictions, average='macro')
 recall = recall_score(y_test, predictions, average='macro')
 f1 = f1_score(y_test, predictions, average='macro')
 accuracy = accuracy_score(y_test, predictions)
-print(f"\n\nResults for XGBClassifier:")
+print(f"\n\nResults for LinearSVC:")
 print(f"Accuracy: {accuracy:.4f}")
 print(f"Precision: {precision:.4f}")
 print(f"Recall: {recall:.4f}")
 print(f"F-Score: {f1:.4f}")
 print(classification_report(y_test, predictions))
-
-
-# In[26]:
-
 
 best_model = classifier
 test_predictions = best_model.predict(X_test_tfidf)
