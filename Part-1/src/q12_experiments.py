@@ -65,12 +65,13 @@ for classifier_name, classifier in [('SVM', svm_classifier), ('Random Forest', r
         accuracy = cross_val_score(pipeline, X, y, cv=skf, scoring='accuracy').mean()
         precision = cross_val_score(pipeline, X, y, cv=skf, scoring='precision_macro').mean()
         recall = cross_val_score(pipeline, X, y, cv=skf, scoring='recall_macro').mean()
-
+        fscore = cross_val_score(pipeline, X, y, cv=skf, scoring='f1_macro').mean()
         # Print results
         print(f"\nResults for {classifier_name} + {vectorizer_name}:")
         print(f"Accuracy: {accuracy:.4f}")
         print(f"Precision: {precision:.4f}")
         print(f"Recall: {recall:.4f}")
+        
         
 # Use your best model (e.g., SVM with BoW in this example)
 best_model = make_pipeline(TfidfVectorizer(), svd, SVC(kernel='linear'))

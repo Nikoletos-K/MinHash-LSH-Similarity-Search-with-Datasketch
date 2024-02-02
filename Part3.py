@@ -173,7 +173,7 @@ def lsh_minhash(train_data, test_data, num_permutations=[16, 32, 64], threshold=
                 minhash.update(word.encode('utf8'))
 
             candidates = lsh.query(minhash)
-            bucket_sizes.append(len(candidates))            
+            bucket_sizes.append(len(candidates))
             for candidate in candidates:
                 similarity = jaccard_similarity(doc, train_data[candidate])
                 if similarity > 0.8:
@@ -187,6 +187,13 @@ def lsh_minhash(train_data, test_data, num_permutations=[16, 32, 64], threshold=
         print('Query time: {}'.format(time.time() - query_time))
         print('Total time: {}'.format(time.time() - total_time))
         print('Cardinality: {}'.format(sum(bucket_sizes)))
+        # Bar plot of bucket sizes
+        plt.hist(bucket_sizes, bins=20)
+        plt.xlabel("Bucket size")
+        plt.ylabel("Number of test documents")
+        plt.title("Histogram of Bucket Sizes for num_perm="+str(num_perm))
+        plt.savefig('buckets_'+str(num_perm)+'.png', bbox_inches='tight')
+        plt.show()
 
     return num_duplicates, cardinalities, duplicates_per_num_perm
 

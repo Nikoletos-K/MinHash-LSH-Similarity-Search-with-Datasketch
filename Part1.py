@@ -89,7 +89,7 @@ manual_stop_words = {'include', 'way', 'work', 'look', 'add', 'time', 'year', 'o
                      'month', 'day', 'help', 'think', 'tell', 'new', 'said', 'say',\
                      'need', 'come', 'good', 'set', 'want', 'people', 'use', 'day', 'week', 'know'}
 
-stop_words= stop_words_nltk.union(stop_words_pypi)
+stop_words = stop_words_nltk.union(stop_words_pypi)
 stop_words = stop_words.union(manual_stop_words)
 
 stemmer = PorterStemmer()
@@ -263,4 +263,3 @@ output_df = pd.DataFrame({'Id': test_data['Id'], 'Predicted': label_encoder.inve
 output_df.to_csv('testSet_categories.csv', index=False)
 
 print("Predictions saved to testSet_categories.csv")
-

@@ -3,4 +3,6 @@ Part-2/data/*
 Part-3/data/*
 *.pyc
 *.csv
+nltk_data/*
+.ipynb_checkpoints/*
 

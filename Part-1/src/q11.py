@@ -30,16 +30,6 @@ nltk.download('stopwords')
 nltk.download('punkt')
 
 def generate_wordcloud(text, title="WordCloud", remove_stopwords=True):
-    """
-    Generate a word cloud from the given text after removing stopwords.
-
-    Parameters:
-    - text (str): Input text for word cloud generation.
-    - title (str): Title for the word cloud plot.
-
-    Returns:
-    - None
-    """
     # Tokenize the text
     print("Tokenizing the text...")
     words = word_tokenize(text)
