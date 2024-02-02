@@ -172,26 +172,31 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 import numpy as np
+from sklearn.decomposition import TruncatedSVD
 
 X = train_data['text'].astype(str)
 y = train_data['Label']
 
-vectorizer = CountVectorizer()
+vectorizer = CountVectorizer(max_features=1024)
 X_train_bow = vectorizer.fit_transform(train_data['text'])
 X_test_bow = vectorizer.transform(test_data['text'])
 
-vectorizer = TfidfVectorizer()
-X_train_tfidf = vectorizer.fit_transform(train_data['text'])
-X_test_tfidf = vectorizer.transform(test_data['text'])
+# vectorizer = TfidfVectorizer(max_features=1024)
+# X_train_tfidf = vectorizer.fit_transform(train_data['text'])
+# X_test_tfidf = vectorizer.transform(test_data['text'])
 
 svm_classifier = SVC(kernel='linear')
 rf_classifier = RandomForestClassifier(n_estimators=1000, max_features='sqrt', n_jobs=-1)
-vectorizers = ['TF-IDF', 'BoW']
+vectorizers = ['SVD', 'BoW']
 
 for classifier_name, classifier in [('SVM', svm_classifier), ('Random Forest', rf_classifier)]:
     for vectorizer in vectorizers:
 
-        X = X_train_tfidf if vectorizer == 'TF-IDF' else X_train_bow
+        X = X_train_bow
+
+        if vectorizer == 'SVD':
+            svd = TruncatedSVD(n_components=100)
+            X = svd.fit_transform(X)
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -244,7 +249,7 @@ precision = precision_score(y_test, predictions, average='macro')
 recall = recall_score(y_test, predictions, average='macro')
 f1 = f1_score(y_test, predictions, average='macro')
 accuracy = accuracy_score(y_test, predictions)
-print(f"\n\nResults for XGBClassifier:")
+print(f"\n\nResults for LinearSVC:")
 print(f"Accuracy: {accuracy:.4f}")
 print(f"Precision: {precision:.4f}")
 print(f"Recall: {recall:.4f}")

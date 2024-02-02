@@ -114,7 +114,7 @@ train_data_aslist = train_data['text'].tolist()
 
 # Parameters
 k_neighbors = 15  # Number of neighbors for K-NN
-threshold = 0.0  # Similarity threshold for LSH
+threshold = 0.8  # Similarity threshold for LSH
 
 # Create vectorizer
 vectorizer = CountVectorizer(max_features=512)
@@ -160,8 +160,7 @@ plt.xlabel("KNN Index")
 plt.ylabel("Test Data Index")
 plt.title("Heatmap of True KNN Distances")
 plt.savefig('heatmap.png', bbox_inches='tight')
-# plt.show()
-
+plt.clf()
 
 #  Histogram of true KNN distances
 plt.hist(true_knn_distances.flatten(), bins=20)
@@ -169,9 +168,9 @@ plt.xlabel("Distance")
 plt.ylabel("Frequency")
 plt.title("Histogram of True KNN Distances")
 plt.savefig('histogram.png', bbox_inches='tight')
-# plt.show()
+plt.clf()
 
-count_greater_than_threshold = np.sum(true_knn_distances > threshold)
+count_greater_than_threshold = np.sum(true_knn_distances < 1-threshold)
 print(f"Number of pairs with similarity > {threshold}: {count_greater_than_threshold}")
 print("Calculating LSH...")
 for num_perm in num_permutations:
@@ -205,8 +204,10 @@ for num_perm in num_permutations:
 
         candidates = lsh.query(minhash)
         similarities = true_knn_distances[i]
-        true_indices = true_knn_indices[i]        
-        true_indices = [true_knn_indices[i][j] for j in range(15) if similarities[j] > threshold]
+        true_indices = true_knn_indices[i]
+        distance_threshold = 1-threshold
+        true_indices = [true_knn_indices[i][j] for j in range(15) if similarities[j] < distance_threshold]
+
         avg_bucket_size.append(len(candidates))
 
         if len(candidates)>0 and len(true_indices)>0:
@@ -220,6 +221,7 @@ for num_perm in num_permutations:
     plt.ylabel("Frequency")
     plt.title("Histogram of Bucket Sizes")
     plt.savefig('buckets_'+str(num_perm)+'.png', bbox_inches='tight')
+    plt.clf()
 
     end_query_time = time.time()
     build_time = time.time()
